@@ -13,6 +13,12 @@
 
 using namespace std;
 
+class Point {
+
+    public:
+        double x;
+        double y;
+};
 
 /*
  * Global variables which completely specify the input.
@@ -21,22 +27,14 @@ using namespace std;
 bool euclidean ; //true is euclidean.
 int n_cities ; //the number of cities.
 double **distance_matrix ;
-Point *coordinates;
 
 /* GA parameters */
 const int init_pop = 100;
-const int no_gens = 300;
+const int no_gens = 200;
 double mutationRate = 0.015;
 int tournamentSize = 15;
 bool elitism = true;
-
-
-class Point {
-
-    public:
-        double x;
-        double y;
-};
+Point *coordinates;
 
 
 class Tour{
@@ -288,12 +286,12 @@ void AcceptInput() {
     for ( int i	= 0 ; i < n_cities ; i++ ) {
         distance_matrix[i] = new double[n_cities];
     }
-    coordinates = new Point[n_cities] ;
+	coordinates = new Point[n_cities] ;
 
-    //Get coordinates.
-    for ( int i = 0 ; i < n_cities ; i++ ) {
-        cin>>coordinates[i].x>>coordinates[i].y;
-    }
+	//Get coordinates.
+	for ( int i = 0 ; i < n_cities ; i++ ) {
+		cin>>coordinates[i].x>>coordinates[i].y;
+	}
 
     //Fill up distance matrix
     for ( int i = 0 ; i < n_cities ; i++ ) {
