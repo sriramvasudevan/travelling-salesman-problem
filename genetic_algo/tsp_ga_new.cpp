@@ -32,7 +32,7 @@ const int num_nnas = 5 ;
 
 /* GA parameters */
 const int init_pop = 100;
-const int no_gens = 300;
+const int no_gens = 30;
 double mutationRate = 0.15;
 int tournamentSize = 15;
 int retainedparents = 20;
@@ -49,9 +49,10 @@ class Tour{
 
         // Cache
         double distance;
-
+        bool updated ; //has the distance been updated?
         Tour(){
             distance = 0.0;
+            updated=true;
             for (int i = 0; i < n_cities; i++) {
                 tour.push_back(-1);
             }
@@ -59,6 +60,7 @@ class Tour{
 
         Tour(int* i_tour) {
         	distance = 0.0 ;
+        	updated=true;
         	for ( int i = 0 ; i < n_cities ; i++ ) {
         		tour.push_back(i_tour[i]);
         	}
@@ -77,40 +79,30 @@ class Tour{
         // Sets a city in a certain position within a tour
         void setCity(int tourPosition, int city) {
             tour.at(tourPosition) = city;
-            // If the tours been altered we need to reset the fitness and distance
             distance = 0.0;
+            updated=true;
         }
 
         // Gets the total distance of the tour
         double getDistance(){
-            if (distance == 0.0) {
+            if (updated) {
                 double tourDistance = 0.0;
                 // Loop through our tour's cities
-                for (int cityIndex=0; cityIndex < n_cities; cityIndex++) {
-                    // Get city we're travelling from
-                    int fromCity = tour.at(cityIndex);
-                    // City we're travelling to
-                    int destinationCity;
-                    // Check we're not on our tour's last city, if we are set our
-                    // tour's final destination city to our starting city
-                    if(cityIndex+1 < n_cities){
-                        destinationCity = tour.at(cityIndex+1);
-                    }
-                    else{
-                        destinationCity = 0;
-                    }
-                    // Get the distance between the two cities
-                    tourDistance += distance_matrix[fromCity][destinationCity];
+                for (int cityIndex=0; cityIndex < n_cities-1; cityIndex++) {
+                    tourDistance += distance_matrix[tour[cityIndex]][tour[cityIndex+1]];
                 }
+                tourDistance += distance_matrix[tour[tour.size()-1]][tour[0]];
                 distance = tourDistance;
+                updated=false;
             }
             return distance;
         }
 
+
         void Eval() {
 
         	double currtourlength = getDistance();
-        	cout<<currtourlength<<endl;
+//        	cout<<currtourlength<<endl;
         	if (currtourlength < BESTTOURLENGTH) {
         		BESTTOURLENGTH = currtourlength ;
         		cout<<currtourlength<<endl ;
@@ -184,54 +176,8 @@ class Population {
         }
 };
 
-
-/*
 // Applies crossover to a set of parents and creates offspring
-Tour* crossover(Tour* parent1, Tour* parent2) {
-    // Create new child tour
-    Tour* child = new Tour();
-
-    // Get start and end sub tour positions for parent1's tour
-    int startPos = rand()%n_cities;
-    int endPos = rand()%n_cities;
-
-    // Loop and add the sub tour from parent1 to our child
-    for (int i = 0; i < n_cities; i++) {
-        // If our start position is less than the end position
-        if (startPos < endPos && i > startPos && i < endPos) {
-            child->setCity(i, parent1->tour.at(i));
-        }
-        // If our start position is larger
-        else if (startPos > endPos) {
-            if (!(i < startPos && i > endPos)) {
-                child->setCity(i, parent1->tour.at(i));
-            }
-        }
-    }
-
-    // Loop through parent2's city tour
-    for (int i = 0; i < n_cities; i++) {
-    	// If child doesn't have the city add it
-        if (!child->containsCity(parent2->tour.at(i))) {
-            // Loop to find a spare position in the child's tour
-            for (int ii = 0; ii < n_cities; ii++) {
-                // Spare position found, add city
-                if (child->tour.at(ii)==-1) {
-                    child->setCity(ii, parent2->tour.at(i));
-                    break;
-                }
-            }
-        }
-    }
-    return child;
-}*/
-
-// Applies crossover to a set of parents and creates offspring
-Tour* crossover(Tour* parent1, Tour* parent2) {
-    // Create new child tour
-    Tour* child1 = new Tour();
-    Tour* child2 = new Tour();
-
+void crossover(Tour* parent1, Tour* parent2, Tour* child1, Tour* child2) {
     // Get start and end sub tour positions for parent1's tour
     int startPos = rand()%n_cities;
     int endPos = rand()%n_cities;
@@ -275,9 +221,48 @@ Tour* crossover(Tour* parent1, Tour* parent2) {
 
     rotate(child1->tour.begin(), child1->tour.end()-startPos-1, child1->tour.end());
     rotate(child2->tour.begin(), child2->tour.end()-startPos-1, child2->tour.end());
-
-    return child1;
 }
+
+/*
+// Applies crossover to a set of parents and creates offspring
+Tour* crossover(Tour* parent1, Tour* parent2) {
+    // Create new child tour
+    Tour* child = new Tour();
+
+    // Get start and end sub tour positions for parent1's tour
+    int startPos = rand()%n_cities;
+    int endPos = rand()%n_cities;
+
+    // Loop and add the sub tour from parent1 to our child
+    for (int i = 0; i < n_cities; i++) {
+        // If our start position is less than the end position
+        if (startPos < endPos && i > startPos && i < endPos) {
+            child->setCity(i, parent1->tour.at(i));
+        }
+        // If our start position is larger
+        else if (startPos > endPos) {
+            if (!(i < startPos && i > endPos)) {
+                child->setCity(i, parent1->tour.at(i));
+            }
+        }
+    }
+
+    // Loop through parent2's city tour
+    for (int i = 0; i < n_cities; i++) {
+    	// If child doesn't have the city add it
+        if (!child->containsCity(parent2->tour.at(i))) {
+            // Loop to find a spare position in the child's tour
+            for (int ii = 0; ii < n_cities; ii++) {
+                // Spare position found, add city
+                if (child->tour.at(ii)==-1) {
+                    child->setCity(ii, parent2->tour.at(i));
+                    break;
+                }
+            }
+        }
+    }
+    return child;
+}*/
 
 
 // Mutate a tour using swap mutation
@@ -287,6 +272,7 @@ void mutate(Tour* tour) {
     // Get a second random position in the tour
     int tourPos2 = rand()%n_cities;
     reverse(tour->tour.begin()+tourPos1, tour->tour.begin()+tourPos2);
+    tour->updated = true ;
 }
 
 
@@ -321,7 +307,6 @@ Population* evolvePopulation(Population* pop) {
 
 	initialvector[0]->Eval();
 	Population* newPopulation = new Population(pop->population_size, initialvector);
-    newPopulation->tours.at(0) = pop->getFittest();
 
     // Crossover population
     // Loop over the new population's size and create individuals from
@@ -330,10 +315,15 @@ Population* evolvePopulation(Population* pop) {
         // Select parents
         Tour* parent1 = tournamentSelection(pop);
         Tour* parent2 = tournamentSelection(pop);
+        // Create new child tour
+        Tour* child1 = new Tour();
+        Tour* child2 = new Tour();
         // Crossover parents
-        Tour* child = crossover(parent1, parent2);
+        crossover(parent1, parent2, child1, child2);
         // Add child to new population
-        newPopulation->tours.at(i) =  child;
+        newPopulation->tours.at(i) =  child1;
+        i++;
+        newPopulation->tours.at(i) =  child2;
     }
     for (int i = retainedparents; i < newPopulation->population_size; i++) {
         double r = ((double)rand()/RAND_MAX);
@@ -470,10 +460,10 @@ void PreorderMSTTour(int *parent, int *tour) {
 
 bool Contains (const vector<int> &tour, int tocheck ) {
 
-	for (int i = 0 ; i < tour.size();i++) {
-		if (tour[i]==tocheck) return true ;
+	if (find(tour.begin(), tour.end(), tocheck) != tour.end()) {
+		return true;
 	}
-	return false ;
+	return false;
 }
 
 
@@ -507,23 +497,193 @@ Tour* NNA () {
 	return toReturn ;
 }
 
+//Will swapping the edges at these indices help?
+bool EdgeExchangeHelps(const vector<int> &it, int e1, int e2 ) {
+
+	//Let's say I have 0 1 2 3 4 5
+	//And I want to exchange 0 and 4 (edge node is understood to represent the starting one)
+	//New tour would be 0 4 3 2 1 5. I have replaced 0-1 and 4-5 by 0-4 and 1-5
+	int s1=e1+1, s2=(e2+1)%(n_cities) ; //successors
+	return (distance_matrix[it[e1]][it[e2]] + distance_matrix[it[s1]][it[s2]]+0.1	) < (distance_matrix[it[e1]][it[s1]] + distance_matrix[it[e2]][it[s2]]);
+
+}
+
+//Tries all 4 possible 3 exchanges. Returns the best of the lot..
+//Returns 0 if none of them help.
+int ThreeEdgeExchangeHelps(const vector<int> &it, int e1, int e2, int e3 ) {
+
+	int toReturn = 0 ;
+	int s1=e1+1, s2=(e2+1), s3=(e3+1) ; //successors
+	double currbest = distance_matrix[it[e1]][it[s1]] + distance_matrix[it[e2]][it[s2]] + distance_matrix[it[e3]][it[s3]];
+	double currcost ;
+	//case 1: [e1,e2],[s1,e3],[s2,s3]
+	currcost = distance_matrix[it[e1]][it[e2]]+distance_matrix[it[s1]][it[e3]]+distance_matrix[it[s3]][it[s2]];
+	if (currcost +0.2< currbest) {
+		toReturn = 1 ;
+		currbest = currcost ;
+	}
+
+	//case2: [e1,s2],[s1,s3],[e2,e3]
+	currcost = distance_matrix[it[e1]][it[s2]]+distance_matrix[it[s1]][it[s3]]+distance_matrix[it[e2]][it[e3]];
+	if (currcost +0.2 < currbest) {
+		toReturn = 2 ;
+		currbest = currcost ;
+	}
+
+	//case 3: [e1,e3],[s1,s2],[e2,s3]
+	currcost = distance_matrix[it[e1]][it[e3]]+distance_matrix[it[s1]][it[s2]]+distance_matrix[it[e2]][it[s3]];
+	if (currcost +0.2< currbest) {
+		toReturn = 3 ;
+		currbest = currcost ;
+	}
+
+	//case 4: [e1,s2],[s3,e2],[s1,e3]
+	currcost = distance_matrix[it[e1]][it[s2]]+distance_matrix[it[s3]][it[e2]]+distance_matrix[it[s1]][it[e3]];
+	if (currcost + 0.2 < currbest) {
+		toReturn = 4 ;
+		currbest = currcost ;
+	}
+	return toReturn ;
+}
+
+//does the exchange. 4 is from 1-4 (defined by above fn).
+void ThreeEdgeExchange (vector<int> &i_tour, int e1, int e2, int e3, int which) {
+
+	vector<int> copy (i_tour); //a copy.
+	int s1=e1+1, s2=(e2+1), s3=(e3+1) ; //successors
+	switch(which) {
+
+	//case 1: [e1,e2],[s1,e3],[s2,s3]
+	case 1:
+		i_tour.clear();
+		for ( int i = 0 ; i <= e1 ; i++ ) {
+			i_tour.push_back(copy[i]);
+		}
+		for (int i = e2;i>=s1;i--) {
+			i_tour.push_back(copy[i]);
+		}
+		for (int i = e3 ; i >=s2 ; i--) {
+			i_tour.push_back(copy[i]);
+		}
+		for (int i = s3 ; i < n_cities ; i++) {
+			i_tour.push_back(copy[i]);
+		}
+		break;
+
+	//case2: [e1,s2],[s1,s3],[e2,e3]
+	case 2:
+		i_tour.clear();
+		for ( int i = 0 ; i <= e1 ; i++ ) {
+			i_tour.push_back(copy[i]);
+		}
+		for ( int i = s2 ;i<=e3;i++) {
+			i_tour.push_back(copy[i]);
+		}
+		for ( int i = e2 ; i >= s1 ; i--) {
+			i_tour.push_back(copy[i]);
+		}
+		for (int i = s3 ; i < n_cities ; i++) {
+			i_tour.push_back(copy[i]);
+		}
+		break;
+
+	//case 3: [e1,e3],[s1,s2],[e2,s3]
+	case 3:
+		i_tour.clear();
+		for ( int i = 0 ; i <= e1 ; i++ ) {
+			i_tour.push_back(copy[i]);
+		}
+		for (int i = e3 ; i >= s2 ; i--) {
+			i_tour.push_back(copy[i]);
+		}
+		for (int i = s1 ; i <= e2 ; i++) {
+			i_tour.push_back(copy[i]);
+		}
+		for (int i = s3 ; i < n_cities ; i++) {
+			i_tour.push_back(copy[i]);
+		}
+		break;
+
+	//case 4: [e1,s2],[s3,e2],[s1,e3]
+	case 4:
+		i_tour.clear();
+		for ( int i = 0 ; i <= e1 ; i++ ) {
+			i_tour.push_back(copy[i]);
+		}
+		for (int i = s2 ; i <= e3 ; i++) {
+			i_tour.push_back(copy[i]);
+		}
+		for (int i = s1 ; i <= e2 ; i++) {
+			i_tour.push_back(copy[i]);
+		}
+		for (int i = s3 ; i < n_cities ; i++) {
+			i_tour.push_back(copy[i]);
+		}
+		break;
+	}
+	copy.clear();
+}
+
 //Do a two-opt for all the goodtours.
 void TwoOpt (vector<Tour*> &goodtours) {
 
 	double prevbest, currbest ;
+	vector<double> distvect ;
+	bool flag ;
 	//for each tour.
 	for ( int i = 0 ; i < goodtours.size() ; i++ ) {
-		do {
-			prevbest = goodtours[i]->getDistance();
-			for ( int city = 0 ; city < n_cities ; city ++ ) {
-
+		flag = true ;
+		while (flag) {
+			flag = false ;
+			for ( int edge1 = 0 ; edge1 < n_cities -1 ; edge1++ ) {
+				for (int edge2 = edge1+2 ; edge2<n_cities ; edge2++ ) {
+					if (EdgeExchangeHelps(goodtours[i]->tour,edge1,edge2)) {
+						flag = true ;
+						//If the tour is 0 1 2 3 4 5 6, and we find that we must exchange when
+						//edge1 is 1 and edge2 is 4, our final tour must be 0 1 4 3 2 5 6
+						reverse(goodtours[i]->tour.begin()+edge1+1,goodtours[i]->tour.begin()+edge2+1);
+						goodtours[i]->updated = true ; //We must set this to true whenever we modify the tour.
+						goodtours[i]->Eval();
+					}
+				}
 			}
-
-		} while(currbest < prevbest );
-
+		}
 	}
 
 }
+//Do a two-opt for all the goodtours.
+void ThreeOpt (vector<Tour*> &goodtours) {
+
+	double prevbest, currbest ;
+	vector<double> distvect ;
+	bool flag ;
+	//for each tour.
+	for ( int i = 0 ; i < goodtours.size() ; i++ ) {
+		flag = true ;
+		//While 3-opt is generating an improvement.
+		while (flag) {
+			flag = false ;
+			for ( int edge1 = 0 ; edge1 < n_cities -1 ; edge1++ ) {
+				for (int edge2 = edge1+2 ; edge2<n_cities-1; edge2++ ) {
+					for (int edge3 = edge2+2 ; edge3<n_cities-1; edge3++) {
+						int which = ThreeEdgeExchangeHelps(goodtours[i]->tour,edge1,edge2,edge3) ;
+						if (which>0) {
+							flag = true ;
+							//If the tour is 0 1 2 3 4 5 6, and we find that we must exchange when
+							//edge1 is 1 and edge2 is 4, our final tour must be 0 1 4 3 2 5 6
+							ThreeEdgeExchange(goodtours[i]->tour,edge1,edge2,edge3,which);
+							goodtours[i]->updated = true ;
+							goodtours[i]->Eval();
+						}
+					}
+				}
+			}
+		}
+		cout<<"Optimal 3-opt found for tour no "<<i<<endl;
+	}
+
+}
+
 
 int main() {
     AcceptInput();
@@ -547,23 +707,24 @@ int main() {
 	PreorderMSTTour(mst_parent_pointer,tour);
 	Tour *msttour = new Tour(tour);
 	msttour->Eval();
-	vector<Tour*> initialtoursforga ;
+	vector<Tour*> initialtours ;
 	for (int i = 0 ; i < num_nnas ; i++ ) {
-		initialtoursforga.push_back(NNA());
-		initialtoursforga[initialtoursforga.size()-1]->Eval();
+		initialtours.push_back(NNA());
+		initialtours[initialtours.size()-1]->Eval();
 	}
-	initialtoursforga.push_back(msttour);
-	Population* pop = new Population(init_pop, initialtoursforga);
+	initialtours.push_back(msttour);
+	TwoOpt(initialtours);
+	ThreeOpt(initialtours);
+	Population* pop = new Population(init_pop, initialtours);
 
 	// Evolve population for no_gens generations
     Population* temp;
     for (int i = 0; i < no_gens; i++) {
-        temp = evolvePopulation(pop);
+        cout<<"Generation no "<<i<<endl;
+    	temp = evolvePopulation(pop);
         delete(pop);
         pop = temp;
     }
-    vector<Tour*> toursforopt = pop->getFittestFew(10);
-    TwoOpt(toursforopt);
     return 0;
 }
 
