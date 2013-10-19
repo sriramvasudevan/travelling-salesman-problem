@@ -33,7 +33,7 @@ int num_nnas;
 
 /* GA parameters */
 const int init_pop = 4000;
-const int no_gens = 60;
+const int no_gens = 35;
 double mutationRate = 0.35;
 int tournamentSize = 550;
 int retainedparents = 1000;
@@ -106,7 +106,7 @@ class Tour{
             //       	cout<<currtourlength<<endl;
             if (currtourlength < BESTTOURLENGTH) {
                 BESTTOURLENGTH = currtourlength ;
-                cout<<currtourlength<<endl ;
+                //cout<<currtourlength<<endl ;
                 //Print tour.
                 for ( int i = 0 ; i < n_cities ; i++ ) {
                    cout<<(tour[i]+1)<<" ";
@@ -358,9 +358,7 @@ Population* evolvePopulation(Population* pop) {
     initialvector[0]->Eval();
     Population* newPopulation = new Population(pop->population_size, initialvector);
 
-    // Crossover population
-    // Loop over the new population's size and create individuals from
-    // Current population
+    // Create new child tours from the initial population of tours
     for (int i = retainedparents; i < newPopulation->population_size; i++) {
         // Select parents
         Tour* parent1 = tournamentSelection(pop);
@@ -410,7 +408,7 @@ void AcceptInput() {
     }
     cin>>n_cities ;
     // Calculate nna value
-    num_nnas = 94.01507*exp(-0.0063143*n_cities);
+    num_nnas = 62.35829*exp(-0.005493*n_cities);
     if (num_nnas==0) {
         num_nnas = 1;
     }
@@ -434,8 +432,8 @@ void AcceptInput() {
     }
 }
 
-// A utility function to find the vertex with minimum key value, from
-// the set of vertices not yet included in MST
+// Which unincluded vertex has the least key value? 
+//Does NOT modify anything.
 int minKey(double* key, bool* mstSet)
 {
     // Initialize min value
@@ -451,41 +449,35 @@ int minKey(double* key, bool* mstSet)
     return min_index;
 }
 
-// Function to construct and print MST for a graph represented using adjacency
-// matrix representation
+// Returns primMST in parent pointer representation
 int* primMST(double** graph)
 {
-    int* parent = new int[n_cities]; // Array to store constructed MST
-    double* key = new double[n_cities];   // Key values used to pick minimum weight edge in cut
-    bool* mstSet = new bool[n_cities];  // To represent set of vertices not yet included in MST
+    int* parent = new int[n_cities]; //Constructed mst in parent pointer form
+    double* key = new double[n_cities];   //These values pick the cheapest edge across the bipartite graph.
+    bool* mstSet = new bool[n_cities];  //True if city i is included in the mst. 
 
 
-    // Initialize all keys as INFINITE
+    // Initialize all keys as INFINITE, and mstSet to false (no city is included in the mst)
     for (int i = 0; i < n_cities; i++) {
         key[i] = numeric_limits<double>::infinity();
         mstSet[i] = false;
     }
 
     // Always include a random 1st vertex in MST.
-
     int randindex = rand()%n_cities ;
     key[randindex] = 0.0;     // Make key 0 so that this vertex is picked as first vertex
-    parent[randindex] = -1; // First node is always root of MST
+    parent[randindex] = -1; // By convention, this is our MST's root.
     // The MST will have n_cities vertices
     for (int count = 0; count < n_cities-1; count++)
     {
         // Pick the minimum key vertex from the set of vertices
         // not yet included in MST
         int u = minKey(key, mstSet);
-        // Add the picked vertex to the MST Set
+
+		//Set it as picked.
         mstSet[u] = true;
-        // Update key value and parent index of the adjacent vertices of
-        // the picked vertex. Consider only those vertices which are not yet
-        // included in MST
         for (int v = 0; v < n_cities; v++) {
 
-            // mstSet[v] is false for vertices not yet included in MST
-            // Update the key only if graph[u][v] is smaller than key[v]
             if (mstSet[v] == false && graph[u][v] <  key[v]) {
                 parent[v]  = u;
                 key[v] = graph[u][v];
@@ -958,7 +950,6 @@ int main() {
             pop = new Population(init_pop, afterga);
             delete(temp);
         }
-        cout<<"pp!\n";
     }
 
     return 0;
